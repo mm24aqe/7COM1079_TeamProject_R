@@ -289,3 +289,169 @@ if (comparison_test_rq2$p.value < 0.05) {
 } else {
   cat("  Decision: FAIL TO REJECT null hypothesis\n")
   cat("  Conclusion: No significant difference in mean deaths\n\n")
+
+  # RESEARCH QUESTION 3 (Sobia): COMPARISON OF PROPORTIONS
+
+
+cat(paste(rep("=", 80), collapse = ""), "\n")
+cat("RESEARCH QUESTION 3: COMPARISON OF PROPORTIONS\n")
+cat(paste(rep("=", 80), collapse = ""), "\n")
+cat("Is there a difference in the proportion of COVID-19 deaths\n")
+cat("by gender (male vs female) in Malaysia?\n")
+cat(paste(rep("=", 80), collapse = ""), "\n\n")
+
+# Load data for RQ3
+deaths_linelist <- read.csv("archive/epidemic/linelist/linelist_deaths.csv", stringsAsFactors = FALSE)
+
+# Prepare data
+analysis_rq3 <- deaths_linelist %>%
+  select(male) %>%
+  filter(!is.na(male)) %>%
+  mutate(gender = ifelse(male == 1, "Male", "Female"))
+
+# Descriptive statistics RQ3
+cat("Data Summary:\n")
+cat("  Total deaths:", nrow(analysis_rq3), "\n")
+male_count <- sum(analysis_rq3$gender == "Male")
+female_count <- sum(analysis_rq3$gender == "Female")
+male_prop <- male_count / nrow(analysis_rq3)
+female_prop <- female_count / nrow(analysis_rq3)
+cat("  Male deaths:", male_count, "(", round(male_prop * 100, 2), "%)\n")
+cat("  Female deaths:", female_count, "(", round(female_prop * 100, 2), "%)\n\n")
+
+# Create contingency table
+contingency_table <- table(analysis_rq3$gender)
+cat("Contingency Table:\n")
+print(contingency_table)
+cat("\n")
+
+# Visualization 3.1: Stacked Bar Chart
+gender_summary <- analysis_rq3 %>%
+  group_by(gender) %>%
+  summarise(count = n(), .groups = 'drop') %>%
+  mutate(proportion = count / sum(count))
+
+png("output/RQ3/barplot_deaths_by_gender.png", width = 800, height = 600, res = 100)
+ggplot(gender_summary, aes(x = "", y = proportion, fill = gender)) +
+  geom_bar(stat = "identity", width = 0.7, color = "black") +
+  scale_fill_manual(values = c("Male" = "steelblue", "Female" = "pink")) +
+  labs(title = "Proportion of COVID-19 Deaths by Gender in Malaysia",
+       x = "", y = "Proportion", fill = "Gender") +
+  theme_minimal() +
+  theme(plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "gray90"),
+        panel.grid.minor = element_line(color = "gray95"),
+        plot.title = element_text(hjust = 0.5, size = 14, face = "plain"),
+        axis.text.x = element_text(angle = 0),
+        axis.title = element_text(size = 12),
+        legend.position = "right")
+dev.off()
+
+cat("Visualization saved to output/RQ3/\n\n")
+
+# Chi-square test RQ3
+expected_prop <- 0.5
+chisq_test_rq3 <- chisq.test(contingency_table, p = c(expected_prop, expected_prop))
+
+cat("Chi-square Test Results:\n")
+cat("  Chi-square statistic:", round(chisq_test_rq3$statistic, 4), "\n")
+cat("  Degrees of freedom:", chisq_test_rq3$parameter, "\n")
+cat("  P-value:", format(chisq_test_rq3$p.value, scientific = TRUE), "\n")
+
+if (chisq_test_rq3$p.value < 0.05) {
+  cat("  Decision: REJECT null hypothesis\n")
+  cat("  Conclusion: Significant difference in proportion of deaths by gender\n\n")
+} else {
+  cat("  Decision: FAIL TO REJECT null hypothesis\n")
+  cat("  Conclusion: No significant difference in proportions\n\n")
+}
+
+
+# SAVE SUMMARY
+
+
+sink("output/group_analysis_summary.txt")
+cat(paste(rep("=", 80), collapse = ""), "\n")
+cat("COVID-19 MALAYSIA: GROUP STATISTICAL ANALYSIS SUMMARY\n")
+cat("7COM1079 - Team Research and Development Project\n")
+cat(paste(rep("=", 80), collapse = ""), "\n\n")
+
+cat("Generated:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n\n")
+
+cat(paste(rep("=", 80), collapse = ""), "\n")
+cat("RESEARCH QUESTION 1 (MEMBER 1): CORRELATION ANALYSIS\n")
+cat(paste(rep("=", 80), collapse = ""), "\n")
+cat("Question: Is there a correlation between daily new COVID-19 cases and\n")
+cat("          daily vaccination doses administered in Malaysia?\n\n")
+cat("H0: There is no correlation between daily new COVID-19 cases and\n")
+cat("    daily vaccination doses administered in Malaysia.\n")
+cat("H1: There is a correlation between daily new COVID-19 cases and\n")
+cat("    daily vaccination doses administered in Malaysia.\n\n")
+cat("Sample size:", nrow(analysis_rq1), "\n")
+cat("Method:", toupper(cor_method_rq1), "correlation\n")
+cat("Correlation coefficient:", round(cor_test_rq1$estimate, 4), "\n")
+cat("R-squared:", round(r_squared_rq1, 4), "\n")
+cat("P-value:", format(cor_test_rq1$p.value, scientific = TRUE), "\n")
+if (cor_test_rq1$p.value < 0.05) {
+  cat("Decision: REJECT null hypothesis\n\n")
+} else {
+  cat("Decision: FAIL TO REJECT null hypothesis\n\n")
+}
+
+cat(paste(rep("=", 80), collapse = ""), "\n")
+cat("RESEARCH QUESTION 2 (MEMBER 2): COMPARISON OF MEANS\n")
+cat(paste(rep("=", 80), collapse = ""), "\n")
+cat("Question: Is there a difference in the mean number of daily COVID-19 deaths\n")
+cat("          between periods of high and low vaccination rates in Malaysia?\n\n")
+cat("H0: There is no difference in mean daily deaths between high and low\n")
+cat("    vaccination periods.\n")
+cat("H1: There is a difference in mean daily deaths between high and low\n")
+cat("    vaccination periods.\n\n")
+cat("High period (>100,000 doses/day):", sum(analysis_rq2$vaccination_period == "High"), "days\n")
+cat("Low period (<=100,000 doses/day):", sum(analysis_rq2$vaccination_period == "Low"), "days\n")
+cat("Method:", test_name_rq2, "\n")
+cat("Test statistic:", round(comparison_test_rq2$statistic, 4), "\n")
+cat("P-value:", format(comparison_test_rq2$p.value, scientific = TRUE), "\n")
+if (comparison_test_rq2$p.value < 0.05) {
+  cat("Decision: REJECT null hypothesis\n\n")
+} else {
+  cat("Decision: FAIL TO REJECT null hypothesis\n\n")
+}
+
+cat(paste(rep("=", 80), collapse = ""), "\n")
+cat("RESEARCH QUESTION 3 (MEMBER 3): COMPARISON OF PROPORTIONS\n")
+cat(paste(rep("=", 80), collapse = ""), "\n")
+cat("Question: Is there a difference in the proportion of COVID-19 deaths\n")
+cat("          by gender (male vs female) in Malaysia?\n\n")
+cat("H0: There is no difference in the proportion of deaths between males\n")
+cat("    and females.\n")
+cat("H1: There is a difference in the proportion of deaths between males\n")
+cat("    and females.\n\n")
+cat("Total deaths:", nrow(analysis_rq3), "\n")
+cat("Male deaths:", male_count, "(", round(male_prop * 100, 2), "%)\n")
+cat("Female deaths:", female_count, "(", round(female_prop * 100, 2), "%)\n")
+cat("Method: Chi-square test\n")
+cat("Chi-square statistic:", round(chisq_test_rq3$statistic, 4), "\n")
+cat("P-value:", format(chisq_test_rq3$p.value, scientific = TRUE), "\n")
+if (chisq_test_rq3$p.value < 0.05) {
+  cat("Decision: REJECT null hypothesis\n\n")
+} else {
+  cat("Decision: FAIL TO REJECT null hypothesis\n\n")
+}
+
+cat(paste(rep("=", 80), collapse = ""), "\n")
+cat("END OF GROUP ANALYSIS SUMMARY\n")
+cat(paste(rep("=", 80), collapse = ""), "\n")
+sink()
+
+cat(paste(rep("=", 80), collapse = ""), "\n")
+cat("ANALYSIS COMPLETE FOR ALL 3 RESEARCH QUESTIONS!\n")
+cat(paste(rep("=", 80), collapse = ""), "\n")
+cat("All outputs saved to 'output' folder:\n")
+cat("  RQ1: output/RQ1/ (3 visualizations)\n")
+cat("  RQ2: output/RQ2/ (3 visualizations)\n")
+cat("  RQ3: output/RQ3/ (1 visualization)\n")
+cat("  Summary: output/group_analysis_summary.txt\n")
+cat(paste(rep("=", 80), collapse = ""), "\n\n")
+
